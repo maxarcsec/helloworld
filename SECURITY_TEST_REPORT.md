@@ -20,7 +20,7 @@ The observed analyzer container materially limits impact:
 - analyzer UID and GID were both `2004`;
 - `/`, `/src`, and `/workdir` were not writable;
 - no credential-like environment variable names were present;
-- HTTPS egress to the controlled catcher failed; and
+- HTTP and HTTPS egress to the controlled catcher failed; and
 - the catcher received no request during the sampled run.
 
 This is confirmed arbitrary code and child-process execution inside the
