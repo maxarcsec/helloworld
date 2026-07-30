@@ -95,7 +95,7 @@ class CodacyAnalyzerCanaryChecker(BaseChecker):
     }
 
     def visit_module(self, node):
-        if node.file.endswith("python/pylint_canary.py"):
+        if node.file.endswith("python/prospector_process_canary.py"):
             self.add_message("codacy-analyzer-canary", node=node)
 
 
