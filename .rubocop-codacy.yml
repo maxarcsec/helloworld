@@ -1,0 +1,6 @@
+---
+require:
+  - ./codacy_rubocop_canary.rb
+
+AllCops:
+  NewCops: disable
