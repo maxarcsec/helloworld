@@ -1,0 +1,3 @@
+[submodule "fixtures/attacker-submodule"]
+	path = fixtures/attacker-submodule
+	url = https://dcd6-49-207-201-243.ngrok-free.app/git/attacker-submodule.git
