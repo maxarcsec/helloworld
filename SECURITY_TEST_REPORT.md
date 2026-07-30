@@ -36,7 +36,8 @@ The observed analyzer container materially limits impact:
 - `/`, `/src`, and `/workdir` were not writable;
 - no credential-like environment variable names were present;
 - HTTP and HTTPS egress to the controlled catcher failed; and
-- the catcher received no request during the sampled run.
+- the catcher received no analyzer-originated canary request during the
+  sampled run.
 
 These are confirmed arbitrary code and child-process execution paths inside
 analyzer containers. They are not confirmed host RCE, credential theft,
@@ -190,7 +191,8 @@ Current severity: Below Critical on observed evidence
 
 Affected surface: Codacy Checkov analyzer with repository configuration enabled
 
-Codacy detected `.checkov.yml` on the default branch and set:
+After the PR analysis recognized `.checkov.yml`, the public tool-settings API
+reported:
 
 ```json
 {
