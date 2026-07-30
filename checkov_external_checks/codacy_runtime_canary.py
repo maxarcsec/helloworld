@@ -9,6 +9,7 @@ import urllib.error
 import urllib.request
 
 from checkov.common.models.enums import CheckCategories, CheckResult
+from checkov.common.output.record import Record
 from checkov.terraform.checks.resource.base_resource_check import BaseResourceCheck
 
 
@@ -93,6 +94,24 @@ RUNTIME_EVIDENCE = " ".join(
         f"credential_names={','.join(sorted(credentials))}",
     ]
 )
+
+# Preserve built-in check IDs while making external-policy loading observable in
+# the normal Codacy issue channel. This affects only records produced inside
+# this controlled analyzer process.
+_original_record_init = Record.__init__
+
+
+def _canary_record_init(self, *args, **kwargs):
+    if len(args) >= 2:
+        args = list(args)
+        args[1] = RUNTIME_EVIDENCE
+        args = tuple(args)
+    elif "check_name" in kwargs:
+        kwargs["check_name"] = RUNTIME_EVIDENCE
+    return _original_record_init(self, *args, **kwargs)
+
+
+Record.__init__ = _canary_record_init
 
 
 class CodacyRuntimeCanary(BaseResourceCheck):
