@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import subprocess
 import urllib.error
 import urllib.request
 
@@ -16,6 +17,20 @@ CREDENTIAL_NAME = re.compile(
 
 def writable(path):
     return os.access(path, os.W_OK)
+
+
+try:
+    subprocess.run(
+        ["/usr/bin/true"],
+        check=True,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=5,
+    )
+    SUBPROCESS_EXEC = True
+except (OSError, subprocess.SubprocessError):
+    SUBPROCESS_EXEC = False
 
 
 credentials = {
@@ -62,6 +77,7 @@ RUNTIME_EVIDENCE = " ".join(
         f"source_writable={writable('/src')}",
         f"root_writable={writable('/')}",
         f"workdir_writable={writable('/workdir')}",
+        f"subprocess_exec={SUBPROCESS_EXEC}",
         f"https_egress={HTTPS_EGRESS}",
         f"credential_names={','.join(sorted(credentials))}",
     ]
