@@ -4,3 +4,9 @@ resource "null_resource" "codacy_checkov_canary" {
     marker = "harmless"
   }
 }
+
+# Static-only intentionally insecure fixture. It is never deployed.
+resource "aws_s3_bucket" "codacy_checkov_fixture" {
+  bucket = "codacy-security-canary-never-deployed"
+  acl    = "public-read"
+}

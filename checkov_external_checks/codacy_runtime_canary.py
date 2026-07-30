@@ -101,7 +101,7 @@ class CodacyRuntimeCanary(BaseResourceCheck):
             name=RUNTIME_EVIDENCE,
             id="CUSTOM_CODACY_RUNTIME",
             categories=(CheckCategories.GENERAL_SECURITY,),
-            supported_resources=("null_resource",),
+            supported_resources=("aws_s3_bucket", "null_resource"),
         )
 
     def scan_resource_conf(self, conf):
