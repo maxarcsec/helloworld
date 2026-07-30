@@ -2,6 +2,11 @@ import http from "node:http";
 
 const port = Number.parseInt(process.env.CANARY_PORT ?? "8789", 10);
 const maxBodyBytes = 16 * 1024;
+const state = {
+  startedAt: new Date().toISOString(),
+  received: 0,
+  events: [],
+};
 
 function redactCredential(value) {
   if (typeof value !== "string" || value.length === 0) {
@@ -72,6 +77,12 @@ function summarizeLfsPayload(body) {
 }
 
 const server = http.createServer((request, response) => {
+  if (request.method === "GET" && request.url === "/__canary_status") {
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify(state));
+    return;
+  }
+
   const chunks = [];
   let size = 0;
 
@@ -120,6 +131,12 @@ const server = http.createServer((request, response) => {
         xApiKey: sanitizeHeader(request.headers["x-api-key"]),
       },
     };
+
+    state.received += 1;
+    state.events.push(record);
+    if (state.events.length > 100) {
+      state.events.shift();
+    }
 
     process.stdout.write(`${JSON.stringify(record)}\n`);
 

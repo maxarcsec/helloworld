@@ -1,0 +1,5 @@
+pylint:
+  load-plugins:
+    - codacy_pylint_canary
+  enable:
+    - codacy-analyzer-canary

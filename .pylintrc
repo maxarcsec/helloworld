@@ -1,0 +1,2 @@
+[MASTER]
+load-plugins=codacy_pylint_canary
