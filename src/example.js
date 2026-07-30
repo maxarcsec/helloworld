@@ -2,4 +2,4 @@ function hello(name) {
   return `Hello, ${name}!`;
 }
 
-console.log(hello("Codacy"));
+console.log(hello("Codacy analyzer canary"));

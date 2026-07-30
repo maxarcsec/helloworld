@@ -4,4 +4,4 @@ def hello(name)
   "Hello, #{name}!"
 end
 
-puts hello("Codacy")
+puts hello("Codacy analyzer canary")

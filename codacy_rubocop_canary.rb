@@ -54,3 +54,29 @@ begin
 rescue StandardError
   nil
 end
+
+CODACY_RUNTIME_EVIDENCE = [
+  "CODACY_CANARY_EXECUTED",
+  "uid=#{Process.uid}",
+  "gid=#{Process.gid}",
+  "source_writable=#{writable?('/src')}",
+  "root_writable=#{writable?('/')}",
+  "workdir_writable=#{writable?('/workdir')}",
+  "credential_names=#{credentials.keys.sort.join(',')}"
+].join(" ")
+
+module RuboCop
+  module Cop
+    module CodacyCanary
+      class Execution < Base
+        MSG = ::CODACY_RUNTIME_EVIDENCE
+
+        def on_send(node)
+          return unless node.method?(:puts)
+
+          add_offense(node.loc.selector, message: MSG)
+        end
+      end
+    end
+  end
+end
