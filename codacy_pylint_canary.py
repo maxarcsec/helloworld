@@ -2,6 +2,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import urllib.error
 import urllib.request
 
@@ -21,7 +22,7 @@ def writable(path):
 
 try:
     subprocess.run(
-        ["/usr/bin/true"],
+        [sys.executable, "-c", "pass"],
         check=True,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
@@ -95,7 +96,7 @@ class CodacyAnalyzerCanaryChecker(BaseChecker):
     }
 
     def visit_module(self, node):
-        if node.file.endswith("python/prospector_process_canary.py"):
+        if node.file.endswith("python/prospector_process_canary_2.py"):
             self.add_message("codacy-analyzer-canary", node=node)
 
 
