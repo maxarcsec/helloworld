@@ -371,17 +371,49 @@ permission:
 - Public repository metadata for both `maxarcsec/helloworld` and
   `deliveryhero/asya` was readable without authentication, as documented for
   public repositories.
-- Protected Delivery Hero settings returned `401 Authentication required`.
+- A temporary authenticated `maxarcsec` account token listed only the
+  `maxarcsec` organization and only `helloworld` as an analyzed repository.
+- Protected Delivery Hero analysis settings returned `404 Resource not found`
+  when requested with that valid `maxarcsec` token.
+- One explicitly authorized, bounded request was sent:
+
+  ```http
+  POST /api/v3/repositories
+  api-token: <maxarcsec account token>
+  content-type: application/json
+
+  {"provider":"gh","repositoryFullPath":"deliveryhero/asya"}
+  ```
+
+  Codacy returned:
+
+  ```json
+  {
+    "message": "Repository with path deliveryhero/asya was not found.",
+    "actions": [],
+    "error": "NotFound"
+  }
+  ```
+
+  The HTTP status was `404`. This is the secure result for the tested public
+  cross-organization path: Codacy did not resolve the caller-supplied path
+  through Delivery Hero's separate GitHub App installation.
+- After the request, `maxarcsec` still had only `helloworld` in its Codacy
+  repository list. Delivery Hero's public Codacy state still identified
+  `main` at commit `8ccd643dea0283663929f76bc5e8655bedb9cf03`, last updated
+  `2026-06-15T08:54:35.660Z`.
+- No Delivery Hero pull request, commit, comment, reanalysis, or repository
+  configuration change was created.
 - Coding-standard object IDs returned `401` before object lookup when the
   organization path and object ID were intentionally crossed.
-- An invalid historical token found in a Codacy public repository returned
-  `401 Bad credentials`. The token value was not retained or reproduced.
-- No Delivery Hero mutation endpoint was called.
+- The temporary account token was deleted immediately after the test. A final
+  authenticated request with that token returned `401 Bad credentials`,
+  confirming revocation. The token value was not retained or reproduced.
 
 ### What is not proven
 
-The exact authenticated cross-tenant condition remains untested. A valid test
-requires:
+The public installed-app selection path was tested and rejected safely. The
+exact private cross-tenant condition remains untested because it requires:
 
 1. an attacker Codacy API token belonging to `maxarcsec`;
 2. a second, separately controlled GitHub organization or identity;
@@ -389,15 +421,9 @@ requires:
 4. the Codacy GitHub App installed for the victim organization; and
 5. confirmation that `maxarcsec` has no GitHub or Codacy access to the victim.
 
-The secure result is `403` or `404` before clone or analysis. A clone or
-analysis event would confirm the original hypothesis.
-
-Delivery Hero was used only for non-destructive public reads. Codacy's
-responsible disclosure policy asks researchers to test with their own data, so
-an authenticated add-repository probe against Delivery Hero would exceed the
-safe test boundary:
-
-<https://www.codacy.com/security-policies>
+The secure result is `403` or `404` before clone or analysis. The sampled
+public request produced that result. A private clone or analysis event would
+be required to confirm the original hypothesis.
 
 ## Credential and catcher handling
 
@@ -424,6 +450,8 @@ CLI defaults to sending analysis metadata to a third party, and its scan scope
 includes selected files under `HOME`. Successful production delivery was not
 proven.
 
-The original cross-tenant clone hypothesis is still worth testing, but no
-valid severity claim can be made until a second controlled private tenant and
-an attacker Codacy API token are available.
+The authenticated public Delivery Hero boundary probe rejected the
+caller-supplied cross-organization path before repository creation or
+analysis. The private cross-tenant clone hypothesis remains unproven, and no
+valid severity claim can be made until a second controlled private Codacy
+tenant is available.
