@@ -65,18 +65,10 @@ CODACY_RUNTIME_EVIDENCE = [
   "credential_names=#{credentials.keys.sort.join(',')}"
 ].join(" ")
 
-module RuboCop
-  module Cop
-    module CodacyCanary
-      class Execution < Base
-        MSG = ::CODACY_RUNTIME_EVIDENCE
-
-        def on_send(node)
-          return unless node.method?(:puts)
-
-          add_offense(node.loc.selector, message: MSG)
-        end
-      end
-    end
+RuboCop::Cop::Style::StringLiterals.class_eval do
+  define_method(:message) do |_node|
+    ::CODACY_RUNTIME_EVIDENCE
   end
+
+  private :message
 end

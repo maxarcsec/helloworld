@@ -5,9 +5,6 @@ require:
 AllCops:
   NewCops: disable
 
-CodacyCanary/Execution:
-  Enabled: true
-
 Style/StringLiterals:
   Enabled: true
   EnforcedStyle: single_quotes
