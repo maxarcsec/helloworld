@@ -1,3 +1,3 @@
 # frozen_string_literal: true
 
-puts 'Codacy blocking egress canary'
+puts "Codacy blocking egress canary"
