@@ -44,6 +44,33 @@ function sanitizePayload(body) {
   };
 }
 
+function sanitizeHeader(value) {
+  if (Array.isArray(value)) {
+    return value.map(redactCredential);
+  }
+
+  return redactCredential(value);
+}
+
+function summarizeLfsPayload(body) {
+  const payload = JSON.parse(body);
+  const objects = Array.isArray(payload.objects)
+    ? payload.objects.slice(0, 100).map((object) => ({
+        oid: String(object?.oid ?? "").slice(0, 128),
+        size: Number.isInteger(object?.size) ? object.size : null,
+      }))
+    : [];
+
+  return {
+    operation: String(payload.operation ?? "").slice(0, 32),
+    transfers: Array.isArray(payload.transfers)
+      ? payload.transfers.slice(0, 10).map(String)
+      : [],
+    objectCount: objects.length,
+    objects,
+  };
+}
+
 const server = http.createServer((request, response) => {
   const chunks = [];
   let size = 0;
@@ -58,10 +85,16 @@ const server = http.createServer((request, response) => {
   request.on("end", () => {
     const body = Buffer.concat(chunks).toString("utf8");
     let sanitizedPayload;
+    let lfsPayload = null;
     let parseError = null;
 
     try {
-      sanitizedPayload = sanitizePayload(body);
+      if (request.url?.includes("/objects/batch")) {
+        sanitizedPayload = null;
+        lfsPayload = summarizeLfsPayload(body);
+      } else {
+        sanitizedPayload = sanitizePayload(body);
+      }
     } catch (error) {
       sanitizedPayload = null;
       parseError = error instanceof Error ? error.name : "InvalidPayload";
@@ -77,9 +110,48 @@ const server = http.createServer((request, response) => {
       truncated: size > maxBodyBytes,
       parseError,
       payload: sanitizedPayload,
+      lfsPayload,
+      credentialHeaders: {
+        authorization: sanitizeHeader(request.headers.authorization),
+        cookie: sanitizeHeader(request.headers.cookie),
+        proxyAuthorization: sanitizeHeader(
+          request.headers["proxy-authorization"],
+        ),
+        xApiKey: sanitizeHeader(request.headers["x-api-key"]),
+      },
     };
 
     process.stdout.write(`${JSON.stringify(record)}\n`);
+
+    if (
+      request.method === "POST" &&
+      request.url?.includes("/objects/batch") &&
+      lfsPayload
+    ) {
+      const origin = `https://${request.headers.host}`;
+      const objects = lfsPayload.objects.map((object) => ({
+        oid: object.oid,
+        size: object.size,
+        actions: {
+          download: {
+            href: `${origin}/lfs/objects/${encodeURIComponent(object.oid)}`,
+          },
+        },
+      }));
+
+      response.writeHead(200, {
+        "content-type": "application/vnd.git-lfs+json",
+      });
+      response.end(JSON.stringify({ transfer: "basic", objects }));
+      return;
+    }
+
+    if (request.method === "GET" && request.url?.startsWith("/lfs/objects/")) {
+      response.writeHead(404, { "content-type": "text/plain" });
+      response.end("canary object intentionally unavailable");
+      return;
+    }
+
     response.writeHead(204);
     response.end();
   });
