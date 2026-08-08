@@ -1,12 +1,58 @@
 functionsDir: ./spectral-functions
 functions:
   - arcsecBoundary
+  - arcsecEscalation
 
 rules:
   info-contact:
-    description: Arcsec contained boundary canary v2
+    description: Arcsec contained boundary canary v3
     message: "{{error}}"
     severity: error
     given: $
     then:
       function: arcsecBoundary
+  info-description:
+    description: Arcsec process boundary canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecEscalation
+      functionOptions:
+        mode: processes
+  info-license:
+    description: Arcsec mount boundary canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecEscalation
+      functionOptions:
+        mode: mounts
+  license-url:
+    description: Arcsec namespace boundary canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecEscalation
+      functionOptions:
+        mode: namespace
+  oas3-api-servers:
+    description: Arcsec network boundary canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecEscalation
+      functionOptions:
+        mode: network
+  operation-description:
+    description: Arcsec filesystem boundary canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecEscalation
+      functionOptions:
+        mode: filesystem
