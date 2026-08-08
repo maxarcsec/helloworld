@@ -4,10 +4,9 @@ functions:
 
 rules:
   info-contact:
-    description: Arcsec contained boundary canary
+    description: Arcsec contained boundary canary v2
     message: "{{error}}"
     severity: error
     given: $
     then:
       function: arcsecBoundary
-
