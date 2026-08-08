@@ -112,3 +112,12 @@ rules:
       function: arcsecDeepDive
       functionOptions:
         mode: keyctl-prerequisite
+  oas3-unused-component:
+    description: Arcsec AF_UNIX prerequisite canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecDeepDive
+      functionOptions:
+        mode: af-unix-prerequisite
