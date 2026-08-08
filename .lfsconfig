@@ -1,2 +1,2 @@
 [lfs]
-	url = https://dcd6-49-207-201-243.ngrok-free.app/lfs
+	url = https://example.invalid/disabled-for-rubocop-canary

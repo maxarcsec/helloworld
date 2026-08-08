@@ -11,9 +11,11 @@ The canaries test:
 - whether `/`, `/src`, and `/workdir` are writable; and
 - whether credential-like environment variables are present.
 
-Credential-like values are sent only to the temporary, researcher-controlled
-TLS catcher. The catcher prints only the variable name, value length, and the
-last four characters. Values four characters or shorter are fully masked.
+For this isolated run, the RuboCop canary sends only a fixed marker, numeric
+execution identity, three writable-directory booleans, and credential-like
+environment variable names to a temporary researcher-controlled TLS catcher.
+It never reads or transmits environment values, file contents, tokens, secrets,
+hostnames, or PII.
 
 To trigger each canary, enable the repository configuration-file option for
 RuboCop, ESLint 8, and ESLint 9 in Codacy, then reanalyze this repository.
