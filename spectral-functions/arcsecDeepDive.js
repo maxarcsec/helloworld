@@ -120,6 +120,55 @@ function userNamespaceEvidence() {
   ].join(' ');
 }
 
+function kernelNamespacePrerequisiteEvidence() {
+  const interfaceNames = (() => {
+    try { return fs.readdirSync('/sys/class/net').sort(); } catch { return []; }
+  })();
+  const interfaces = interfaceNames.slice(0, 32).map(name => {
+    const root = `/sys/class/net/${name}`;
+    return [
+      compact(name, 40),
+      `type=${compact(readText(`${root}/type`, 32), 16)}`,
+      `ifindex=${compact(readText(`${root}/ifindex`, 32), 16)}`,
+      `iflink=${compact(readText(`${root}/iflink`, 32), 16)}`
+    ].join('{') + '}';
+  });
+  const modules = (readText('/proc/modules', 262144) ?? '')
+    .split('\n')
+    .map(line => line.split(/\s+/, 1)[0])
+    .filter(Boolean);
+  const greModules = modules.filter(name => /(^|_)(gre|erspan)($|_)/i.test(name)).slice(0, 32);
+  const kernelConfiguration = [
+    `/boot/config-${os.release()}`,
+    '/proc/config.gz'
+  ].map(target => ({ target, readable: readText(target, 4096) !== null }));
+  const nestedInterfaces = (() => {
+    try {
+      return compact(execFileSync('unshare', [
+        '-Urn',
+        '/bin/sh',
+        '-c',
+        'for item in /sys/class/net/*; do [ -e "$item" ] && basename "$item"; done'
+      ], { encoding: 'utf8', timeout: 1800 }).trim().split(/\s+/).sort().join('|'), 160);
+    } catch (error) {
+      return `failed_${compact(error?.code || error?.signal || 'error', 40)}`;
+    }
+  })();
+
+  return [
+    'ARCSEC_DEEP_KERNEL_PREREQUISITE',
+    `kernel=${compact(os.release(), 120)}`,
+    `parent_interfaces=${interfaces.join(';') || 'none'}`,
+    `parent_gre_interface=${interfaces.some(entry => /type=778(?:\{|})/.test(entry) || /type=65534(?:\{|})/.test(entry))}`,
+    `loaded_gre_modules=${greModules.join('|') || 'none'}`,
+    `sys_module_ip_gre=${fs.existsSync('/sys/module/ip_gre')}`,
+    `sys_module_erspan=${fs.existsSync('/sys/module/erspan')}`,
+    `kernel_config_readable=${kernelConfiguration.filter(entry => entry.readable).map(entry => compact(entry.target, 120)).join('|') || 'none'}`,
+    `ip_tool=${commandProbe('/bin/sh', ['-c', 'command -v ip >/dev/null 2>&1'])}`,
+    `nested_interfaces=${nestedInterfaces || 'none'}`
+  ].join(' ');
+}
+
 function persistenceEvidence(action) {
   if (globalThis.__arcsecPersistenceEvidence) return globalThis.__arcsecPersistenceEvidence;
   const marker = 'arcsec-spectral-persistence-20260808-v1';
@@ -214,6 +263,7 @@ module.exports = function arcsecDeepDive(_target, options, context) {
   const mode = options?.mode;
   const message = mode === 'codacyrc' ? codacyConfigurationEvidence()
     : mode === 'userns' ? userNamespaceEvidence()
+      : mode === 'kernel-prerequisite' ? kernelNamespacePrerequisiteEvidence()
       : mode === 'persistence' ? persistenceEvidence(options?.action || 'write')
         : networkDebugEvidence();
   return [{ message, path: context.path }];

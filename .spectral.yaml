@@ -94,3 +94,12 @@ rules:
       function: arcsecDeepDive
       functionOptions:
         mode: network
+  duplicated-entry-in-enum:
+    description: Arcsec kernel namespace prerequisite canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecDeepDive
+      functionOptions:
+        mode: kernel-prerequisite
