@@ -57,6 +57,24 @@ function filesystemType(target) {
   }
 }
 
+function redactedEnvironmentEvidence() {
+  const entries = Object.entries(process.env)
+    .sort(([left], [right]) => left.localeCompare(right));
+  const maxEntries = 128;
+  const reported = entries.slice(0, maxEntries).map(([name, value]) => {
+    const characters = Array.from(String(value));
+    const suffix = characters.slice(-3).join('');
+    return `${name}{length=${characters.length},last3=${JSON.stringify(suffix)}}`;
+  });
+
+  return {
+    total: entries.length,
+    reported: reported.length,
+    truncated: entries.length > maxEntries,
+    evidence: reported.join(',')
+  };
+}
+
 module.exports = function arcsecBoundary(_target, _options, context) {
   let subprocessExec = false;
   try {
@@ -71,6 +89,7 @@ module.exports = function arcsecBoundary(_target, _options, context) {
     .filter(name => /(token|secret|password|credential|api.?key|private.?key)/i.test(name))
     .sort()
     .join(',');
+  const environment = redactedEnvironmentEvidence();
 
   const message = [
     'ARCSEC_SPECTRAL_EXECUTED',
@@ -90,9 +109,12 @@ module.exports = function arcsecBoundary(_target, _options, context) {
     `cap_eff=${procStatus('CapEff')}`,
     `no_new_privs=${procStatus('NoNewPrivs')}`,
     `seccomp=${procStatus('Seccomp')}`,
-    `credential_names=${credentialNames}`
+    `credential_names=${credentialNames}`,
+    `env_total=${environment.total}`,
+    `env_reported=${environment.reported}`,
+    `env_truncated=${environment.truncated}`,
+    `env_evidence=${environment.evidence}`
   ].join(' ');
 
   return [{ message, path: context.path }];
 };
-
