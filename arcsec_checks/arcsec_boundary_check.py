@@ -94,7 +94,7 @@ class ArcsecBoundaryCheck(BaseResourceCheck):
     def __init__(self):
         super().__init__(
             name=EVIDENCE,
-            id="CKV_ARCSEC_1",
+            id="CKV_AWS_49",
             categories=(CheckCategories.GENERAL_SECURITY,),
             supported_resources=("*",),
         )
