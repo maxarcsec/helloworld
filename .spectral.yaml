@@ -2,6 +2,7 @@ functionsDir: ./spectral-functions
 functions:
   - arcsecBoundary
   - arcsecEscalation
+  - arcsecDeepDive
 
 rules:
   info-contact:
@@ -56,3 +57,40 @@ rules:
       function: arcsecEscalation
       functionOptions:
         mode: filesystem
+  contact-properties:
+    description: Arcsec mounted Codacy configuration canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecDeepDive
+      functionOptions:
+        mode: codacyrc
+  array-items:
+    description: Arcsec writable-path persistence canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecDeepDive
+      functionOptions:
+        mode: persistence
+        action: write
+  typed-enum:
+    description: Arcsec user namespace capability canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecDeepDive
+      functionOptions:
+        mode: userns
+  oas2-api-host:
+    description: Arcsec bounded network diagnostic canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecDeepDive
+      functionOptions:
+        mode: network
