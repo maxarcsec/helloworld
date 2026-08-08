@@ -56,20 +56,53 @@ function tcpProbe(host, port) {
   }
 }
 
-function dnsProbe(host) {
+function networkMatrix(entries) {
   const script = `
-    require('dns').lookup(process.env.ARCSEC_HOST, error => process.exit(error ? 1 : 0));
-    setTimeout(() => process.exit(2), 1800);
+    const dns = require('dns');
+    const net = require('net');
+    const entries = JSON.parse(process.env.ARCSEC_ENTRIES);
+    function resolve(host) {
+      return new Promise(done => {
+        let settled = false;
+        const finish = value => { if (!settled) { settled = true; done(value); } };
+        const timer = setTimeout(() => finish(false), 500);
+        dns.lookup(host, error => { clearTimeout(timer); finish(!error); });
+      });
+    }
+    function connect(host, port) {
+      return new Promise(done => {
+        let settled = false;
+        const socket = net.createConnection({ host, port: Number(port) });
+        const finish = value => {
+          if (!settled) {
+            settled = true;
+            socket.destroy();
+            done(value);
+          }
+        };
+        const timer = setTimeout(() => finish(false), 500);
+        socket.once('connect', () => { clearTimeout(timer); finish(true); });
+        socket.once('error', () => { clearTimeout(timer); finish(false); });
+      });
+    }
+    Promise.all(entries.map(async entry => ({
+      name: entry.name,
+      dns: entry.resolve ? await resolve(entry.host) : null,
+      tcp: await connect(entry.host, entry.port)
+    }))).then(results => {
+      process.stdout.write(JSON.stringify(results));
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(3), 1500);
   `;
   try {
-    execFileSync(process.execPath, ['-e', script], {
-      env: { ARCSEC_HOST: String(host) },
-      stdio: 'ignore',
-      timeout: 2500
-    });
-    return true;
+    return JSON.parse(execFileSync(process.execPath, ['-e', script], {
+      env: { ARCSEC_ENTRIES: JSON.stringify(entries) },
+      encoding: 'utf8',
+      timeout: 2000
+    }));
   } catch {
-    return false;
+    return entries.map(entry => ({ name: entry.name, dns: null, tcp: false }));
   }
 }
 
@@ -284,18 +317,27 @@ function filesystemEvidence() {
 }
 
 function networkEvidence() {
-  const targets = ['example.com', 'github.com', 'api.codacy.com', 'artifacts.codacy.com', 'kubernetes.default.svc', 'metadata.google.internal'];
   const resolver = (readText('/etc/resolv.conf', 4096) ?? '').match(/^nameserver\s+(\S+)/m)?.[1] ?? '';
-  const results = targets.map(host => `${host}{dns=${dnsProbe(host)},tcp443=${tcpProbe(host, 443)},tcp80=${tcpProbe(host, 80)}}`);
+  const entries = [
+    { name: 'example_https', host: 'example.com', port: 443, resolve: true },
+    { name: 'github_https', host: 'github.com', port: 443, resolve: true },
+    { name: 'codacy_api_https', host: 'api.codacy.com', port: 443, resolve: true },
+    { name: 'codacy_artifacts_https', host: 'artifacts.codacy.com', port: 443, resolve: true },
+    { name: 'kube_dns_https', host: 'kubernetes.default.svc', port: 443, resolve: true },
+    { name: 'gcp_metadata_http', host: 'metadata.google.internal', port: 80, resolve: true },
+    { name: 'metadata_ipv4_http', host: '169.254.169.254', port: 80, resolve: false },
+    { name: 'public_ipv6_https', host: '2606:4700:4700::1111', port: 443, resolve: false },
+    { name: 'kube_service_https', host: process.env.KUBERNETES_SERVICE_HOST || '127.0.0.1', port: process.env.KUBERNETES_SERVICE_PORT_HTTPS || 443, resolve: false },
+    { name: 'resolver_tcp53', host: resolver || '127.0.0.1', port: 53, resolve: false }
+  ];
+  const results = networkMatrix(entries).map(result =>
+    `${result.name}{dns=${result.dns === null ? 'na' : result.dns},tcp=${result.tcp}}`
+  );
 
   return [
     'ARCSEC_ESC_NETWORK',
     `targets=${results.join(';')}`,
-    `resolver_${redacted(resolver)}`,
-    `resolver_tcp53=${resolver ? tcpProbe(resolver, 53) : false}`,
-    `public_ipv6_tcp443=${tcpProbe('2606:4700:4700::1111', 443)}`,
-    `metadata_ipv4_tcp80=${tcpProbe('169.254.169.254', 80)}`,
-    `kube_service_tcp443=${tcpProbe(process.env.KUBERNETES_SERVICE_HOST, process.env.KUBERNETES_SERVICE_PORT_HTTPS || 443)}`
+    `resolver_${redacted(resolver)}`
   ].join(' ');
 }
 
