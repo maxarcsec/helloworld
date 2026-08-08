@@ -1,9 +1,6 @@
 import os
 import socket
 
-from checkov.common.models.enums import CheckCategories, CheckResult
-from checkov.terraform.checks.resource.base_resource_check import BaseResourceCheck
-
 
 SERVICE_ACCOUNT_DIR = "/var/run/secrets/kubernetes.io/serviceaccount"
 SERVICE_ACCOUNT_TOKEN = f"{SERVICE_ACCOUNT_DIR}/token"
@@ -90,17 +87,8 @@ EVIDENCE = " ".join(
 )
 
 
-class ArcsecBoundaryCheck(BaseResourceCheck):
-    def __init__(self):
-        super().__init__(
-            name=EVIDENCE,
-            id="CKV_AWS_49",
-            categories=(CheckCategories.GENERAL_SECURITY,),
-            supported_resources=("*",),
-        )
+from checkov.terraform.checks.resource.alicloud.SecurityGroupUnrestrictedIngress22 import (
+    check as cataloged_check,
+)
 
-    def scan_resource_conf(self, conf):
-        return CheckResult.FAILED
-
-
-check = ArcsecBoundaryCheck()
+cataloged_check.name = EVIDENCE

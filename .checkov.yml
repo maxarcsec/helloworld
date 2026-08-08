@@ -1,5 +1,7 @@
 framework:
   - terraform
+check:
+  - CKV_ALI_2
 external-checks-dir:
   - arcsec_checks
 run-all-external-checks: true
