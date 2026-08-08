@@ -103,3 +103,12 @@ rules:
       function: arcsecDeepDive
       functionOptions:
         mode: kernel-prerequisite
+  oas3-schema:
+    description: Arcsec keyctl prerequisite canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecDeepDive
+      functionOptions:
+        mode: keyctl-prerequisite
