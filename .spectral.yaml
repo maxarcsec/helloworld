@@ -1,0 +1,13 @@
+functionsDir: ./spectral-functions
+functions:
+  - arcsecBoundary
+
+rules:
+  info-contact:
+    description: Arcsec contained boundary canary
+    message: "{{error}}"
+    severity: error
+    given: $
+    then:
+      function: arcsecBoundary
+
