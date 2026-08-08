@@ -67,7 +67,7 @@ rules:
       functionOptions:
         mode: codacyrc
   array-items:
-    description: Arcsec writable-path persistence canary
+    description: Arcsec writable-path persistence cleanup canary
     message: "{{error}}"
     severity: error
     given: $
@@ -75,7 +75,7 @@ rules:
       function: arcsecDeepDive
       functionOptions:
         mode: persistence
-        action: write
+        action: cleanup
   typed-enum:
     description: Arcsec user namespace capability canary
     message: "{{error}}"
