@@ -20,3 +20,5 @@ RuboCop, ESLint 8, and ESLint 9 in Codacy, then reanalyze this repository.
 
 These files do not execute shell commands, read files, alter repository
 contents, or transmit arbitrary environment variables.
+
+Runloop Reflex gateway-path canary: 2026-08-29-M.
