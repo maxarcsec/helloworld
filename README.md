@@ -23,3 +23,4 @@ contents, or transmit arbitrary environment variables.
 
 Runloop Reflex gateway-path canary: 2026-08-29-M.
 Runloop Reflex IMDSv2 token canary: 2026-08-29-N.
+Runloop Reflex IPv6 root control: 2026-08-29-O.
