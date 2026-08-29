@@ -22,3 +22,4 @@ These files do not execute shell commands, read files, alter repository
 contents, or transmit arbitrary environment variables.
 
 Runloop Reflex gateway-path canary: 2026-08-29-M.
+Runloop Reflex IMDSv2 token canary: 2026-08-29-N.
